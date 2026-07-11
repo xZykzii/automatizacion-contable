@@ -1,14 +1,16 @@
 # Automatización Contable — Diario → Mayor → Balance de 8 Columnas
 
-Trabajo de Gestión Contable: automatización del ciclo contable de la empresa "CIM".
+Trabajo de Gestión Contable: automatización del ciclo contable a partir de un libro diario en Excel.
 
 **Página en vivo:** https://xzykzii.github.io/automatizacion-contable/
 
 ## ¿Qué hace?
 
-1. **Libro Diario**: se sube un archivo Excel con el libro diario (sirve el formato del
-   ejercicio original o la plantilla tabular descargable). Los asientos quedan editables
-   en pantalla: al cambiar cualquier monto, cuenta o asiento, todo se recalcula al instante.
+1. **Libro Diario**: se sube un archivo Excel con el libro diario. Acepta un formato tabular
+   (columnas N°, Fecha, Cuenta, Debe, Haber, Glosa — hay una plantilla descargable) o el
+   formato clásico de asientos (fecha, cuentas al Debe y Haber desplazadas, glosa).
+   Los asientos quedan editables en pantalla: al cambiar cualquier monto, cuenta o asiento,
+   todo se recalcula al instante.
 2. **Libro Mayor**: se genera automáticamente — centraliza los movimientos por cuenta
    (cuentas T), suma Debe/Haber y determina el saldo deudor (SD) o acreedor (SA).
 3. **Balance de 8 Columnas**: se construye desde los saldos del Mayor, clasifica cada
@@ -27,7 +29,7 @@ Trabajo de Gestión Contable: automatización del ciclo contable de la empresa "
 - Partida doble por asiento (Debe = Haber) con alerta de asientos descuadrados.
 - Cuadratura global del Diario y del Balance ("BALANCE CUADRADO / DESCUADRADO").
 - Detección automática de la clasificación de cuentas, con alerta para confirmar
-  las cuentas no reconocidas.
+  las cuentas no reconocidas (se pueden corregir con un selector).
 - Tolerancia de $1 para diferencias por redondeo (ej. IVA).
 
 ## Tecnología

@@ -6,6 +6,7 @@
 
 /* ---------------- Estado global ---------------- */
 let entries = [];            // [{num, fecha, glosa, lineas:[{cuenta, debe, haber}]}]
+let alertaFuente = null;     // mensaje sobre el origen de los datos (se muestra junto a las validaciones)
 const clasifOverrides = {};  // nombreNormalizado -> 'A' | 'P' | 'PE' | 'GA'
 
 const TIPOS = { A: "Activo", P: "Pasivo", PE: "Pérdida (gasto)", GA: "Ganancia (ingreso)" };
@@ -105,7 +106,7 @@ function leerArchivo(file) {
         return;
       }
       entries = res.entries;
-      setAlert("alertas-diario", [{ tipo: "ok", msg: `Archivo "${file.name}" leído correctamente: ${entries.length} asientos detectados en la hoja "${res.hoja}".` }]);
+      alertaFuente = { tipo: "ok", msg: `Archivo "${file.name}" leído correctamente: ${entries.length} asientos detectados en la hoja "${res.hoja}".` };
       recalcularTodo();
     } catch (err) {
       setAlert("alertas-diario", [{ tipo: "error", msg: "Error al leer el archivo: " + err.message }]);
@@ -541,7 +542,7 @@ let _mayor = new Map(), _balance = null;
 function recalcularTodo() {
   const val = validarDiario();
   renderDiario(val);
-  setAlert("alertas-diario", val.alerts);
+  setAlert("alertas-diario", [alertaFuente, ...val.alerts].filter(Boolean));
   _mayor = computarMayor();
   _balance = computarBalance(_mayor);
   renderMayor(_mayor);
@@ -755,9 +756,25 @@ fi.addEventListener("change", () => { if (fi.files[0]) leerArchivo(fi.files[0]);
 ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("dragover"); }));
 dz.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) leerArchivo(f); });
 
-document.getElementById("btn-ejemplo").addEventListener("click", () => {
-  entries = JSON.parse(JSON.stringify(EJEMPLO_CIM));
-  setAlert("alertas-diario", [{ tipo: "ok", msg: "Ejercicio de ejemplo (Empresa CIM) cargado: " + entries.length + " asientos." }]);
+document.getElementById("btn-ejemplo").addEventListener("click", async () => {
+  const btn = document.getElementById("btn-ejemplo");
+  btn.disabled = true;
+  setAlert("alertas-diario", [{ tipo: "warn", msg: "Importando el Excel del ejercicio…" }]);
+  try {
+    // Importa y parsea el archivo Excel original tal como si se hubiera subido
+    const resp = await fetch("Ejercicio para trabajo (1).xlsx");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const wb = XLSX.read(await resp.arrayBuffer(), { type: "array", cellDates: true });
+    const res = parsearWorkbook(wb);
+    if (!res.entries.length) throw new Error("no se encontraron asientos en el Excel");
+    entries = res.entries;
+    alertaFuente = { tipo: "ok", msg: `✔ Ejercicio importado desde "Ejercicio para trabajo (1).xlsx": ${entries.length} asientos leídos automáticamente de la hoja "${res.hoja}".` };
+  } catch (err) {
+    // Respaldo (ej. al abrir index.html sin servidor, donde fetch no funciona)
+    entries = JSON.parse(JSON.stringify(EJEMPLO_CIM));
+    alertaFuente = { tipo: "warn", msg: `No se pudo descargar el Excel del ejercicio (${err.message}); se cargó la copia local de respaldo. Puedes subir el archivo manualmente en el recuadro de arriba.` };
+  }
+  btn.disabled = false;
   recalcularTodo();
 });
 document.getElementById("btn-plantilla").addEventListener("click", descargarPlantilla);
@@ -770,6 +787,7 @@ document.getElementById("btn-add-asiento").addEventListener("click", () => {
 });
 document.getElementById("btn-limpiar").addEventListener("click", () => {
   entries = [];
+  alertaFuente = null;
   ["alertas-diario", "alertas-mayor", "alertas-balance"].forEach((id) => setAlert(id, []));
   document.getElementById("diario-wrap").classList.add("hidden");
   ["mayor-grid", "balance-tabla", "eerr-tabla"].forEach((id) => (document.getElementById(id).innerHTML = ""));

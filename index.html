@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatización Contable — Diario · Mayor · Balance 8 Columnas</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-icon">📒</span>
+      <div>
+        <h1>Automatización Contable</h1>
+        <p>Libro Diario → Libro Mayor → Balance de 8 Columnas · Empresa "CIM"</p>
+      </div>
+    </div>
+    <nav class="steps-nav">
+      <button class="step-btn active" data-target="sec-diario"><span class="step-num">1</span> Libro Diario</button>
+      <button class="step-btn" data-target="sec-mayor" id="nav-mayor" disabled><span class="step-num">2</span> Libro Mayor</button>
+      <button class="step-btn" data-target="sec-balance" id="nav-balance" disabled><span class="step-num">3</span> Balance 8 Columnas</button>
+      <button class="step-btn" data-target="sec-eerr" id="nav-eerr" disabled><span class="step-num">＋</span> Estado de Resultados</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ SECCIÓN 1: LIBRO DIARIO ============ -->
+<section id="sec-diario" class="panel visible">
+  <div class="panel-head">
+    <h2>1 · Libro Diario</h2>
+    <p>Sube un archivo Excel con el libro diario. El sistema acepta el formato del ejercicio original
+       (fecha / cuentas al Debe y Haber / glosa) o el formato de la plantilla tabular.</p>
+  </div>
+
+  <div class="upload-row">
+    <label id="dropzone" class="dropzone" for="file-input">
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden>
+      <div class="dz-icon">⬆️</div>
+      <div class="dz-text"><strong>Haz clic o arrastra aquí</strong> el Excel con el Libro Diario</div>
+      <div class="dz-sub">.xlsx · .xls · .csv</div>
+    </label>
+    <div class="upload-side">
+      <button class="btn btn-accent" id="btn-ejemplo">▶ Cargar ejercicio de ejemplo (CIM)</button>
+      <button class="btn" id="btn-plantilla">⬇ Descargar plantilla Excel</button>
+      <a class="btn" id="btn-original" href="Ejercicio para trabajo (1).xlsx" download style="text-align:center;text-decoration:none">⬇ Ejercicio original (.xlsx)</a>
+      <button class="btn btn-danger-outline" id="btn-limpiar">✕ Limpiar todo</button>
+    </div>
+  </div>
+
+  <div id="alertas-diario" class="alerts"></div>
+
+  <div id="diario-wrap" class="hidden">
+    <div class="table-head-row">
+      <h3>Asientos contables <span id="diario-resumen" class="pill"></span></h3>
+      <div class="btn-group">
+        <button class="btn btn-sm" id="btn-add-asiento">＋ Agregar asiento</button>
+        <button class="btn btn-sm" id="btn-export-diario">⬇ Exportar Diario (.xlsx)</button>
+      </div>
+    </div>
+    <p class="hint">✏️ Todas las celdas son editables: cambia un monto, agrega o elimina líneas y asientos,
+       y el Mayor y el Balance se recalculan <strong>instantáneamente</strong>.</p>
+    <div id="diario-tabla" class="table-scroll"></div>
+    <div class="totales-bar" id="diario-totales"></div>
+  </div>
+</section>
+
+<!-- ============ SECCIÓN 2: LIBRO MAYOR ============ -->
+<section id="sec-mayor" class="panel">
+  <div class="panel-head">
+    <h2>2 · Libro Mayor</h2>
+    <p>Generado automáticamente desde el Libro Diario: centraliza los movimientos por cuenta (esquema de cuenta T)
+       y calcula sumas y saldo deudor (SD) o acreedor (SA) de cada cuenta.</p>
+  </div>
+  <div id="alertas-mayor" class="alerts"></div>
+  <div class="table-head-row">
+    <h3>Cuentas T <span id="mayor-resumen" class="pill"></span></h3>
+    <div class="btn-group">
+      <button class="btn btn-sm" id="btn-export-mayor">⬇ Exportar Mayor (.xlsx)</button>
+      <button class="btn btn-sm" id="btn-export-diario-mayor">⬇ Exportar Diario + Mayor (.xlsx)</button>
+    </div>
+  </div>
+  <div id="mayor-grid" class="tgrid"></div>
+</section>
+
+<!-- ============ SECCIÓN 3: BALANCE ============ -->
+<section id="sec-balance" class="panel">
+  <div class="panel-head">
+    <h2>3 · Balance de 8 Columnas</h2>
+    <p>Se construye automáticamente con los saldos del Mayor. Débitos y Créditos, Saldos, y la clasificación de cada
+       cuenta en Activos, Pasivos, Pérdidas o Ganancias. La utilidad o pérdida del ejercicio se calcula sola.</p>
+  </div>
+  <div id="alertas-balance" class="alerts"></div>
+  <div class="table-head-row">
+    <h3>Balance <span id="balance-estado" class="pill"></span></h3>
+    <div class="btn-group">
+      <button class="btn btn-sm" id="btn-export-balance">⬇ Exportar Balance (.xlsx)</button>
+      <button class="btn btn-sm btn-accent" id="btn-export-todo">⬇ Exportar TODO: Diario + Mayor + Balance + EERR (.xlsx)</button>
+    </div>
+  </div>
+  <p class="hint">La clasificación de cada cuenta se detecta automáticamente. Si alguna quedó mal clasificada,
+     corrígela con el selector de su fila y el balance se reordena al instante.</p>
+  <div id="balance-tabla" class="table-scroll"></div>
+</section>
+
+<!-- ============ SECCIÓN EXTRA: ESTADO DE RESULTADOS ============ -->
+<section id="sec-eerr" class="panel">
+  <div class="panel-head">
+    <h2>＋ Estado de Resultados <span class="bonus-tag">mejora adicional</span></h2>
+    <p>Resumen de ingresos (ganancias) y gastos (pérdidas) del período, con el resultado del ejercicio.</p>
+  </div>
+  <div id="eerr-tabla" class="table-scroll"></div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>Trabajo de Gestión Contable · Automatización del ciclo contable · Diario → Mayor → Balance de 8 columnas.
+     Funciona 100% en el navegador: los datos no se envían a ningún servidor.</p>
+</footer>
+
+<script src="vendor/xlsx.bundle.js"></script>
+<script src="js/ejemplo.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
